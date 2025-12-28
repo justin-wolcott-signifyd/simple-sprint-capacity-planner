@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprint Capacity Planner</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #f8fafc;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        input[type="date"], input[type="text"], input[type="number"] {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #e2e8f0;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        select {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #e2e8f0;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        select:hover {
+            border-color: #475569;
+        }
+
+        select option {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 8px;
+        }
+
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        button:hover {
+            background: #2563eb;
+        }
+
+        button.secondary {
+            background: #475569;
+        }
+
+        button.secondary:hover {
+            background: #64748b;
+        }
+
+        button.danger {
+            background: #dc2626;
+        }
+
+        button.danger:hover {
+            background: #b91c1c;
+        }
+
+        button.small {
+            padding: 4px 8px;
+            font-size: 0.75rem;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+        }
+
+        /* Unassigned Panel */
+        .unassigned-panel {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 16px;
+            height: fit-content;
+        }
+
+        .unassigned-panel h2 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+        }
+
+        .unassigned-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+            min-height: 100px;
+        }
+
+        .unassigned-task {
+            background: #334155;
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: grab;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.15s, box-shadow 0.15s;
+            border: 2px solid transparent;
+            user-select: none;
+        }
+
+        .unassigned-task:hover {
+            background: #475569;
+        }
+
+        .unassigned-task.selected {
+            background: #1e3a5f;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3);
+        }
+
+        .unassigned-task .task-name {
+            flex: 1;
+        }
+
+        .unassigned-task .delete-btn {
+            background: transparent;
+            color: #64748b;
+            padding: 2px 6px;
+        }
+
+        .unassigned-task .delete-btn:hover {
+            color: #ef4444;
+        }
+
+        .add-task-form {
+            display: flex;
+            gap: 8px;
+        }
+
+        .add-task-form input {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* Gantt Area */
+        .gantt-container {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        .gantt-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+            gap: 12px;
+        }
+
+        .gantt-header h2 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .gantt {
+            display: grid;
+            gap: 0;
+            min-width: max-content;
+        }
+
+        .gantt-row {
+            display: contents;
+        }
+
+        .gantt-cell {
+            padding: 8px;
+            text-align: center;
+            border-bottom: 1px solid #334155;
+            min-width: 80px;
+        }
+
+        .gantt-cell.date-header {
+            background: #273549;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+            padding: 12px 8px;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.15s;
+        }
+
+        .gantt-cell.date-header:hover {
+            background: #334155;
+        }
+
+        .gantt-cell.date-header.today {
+            background: #1d4ed8;
+            color: #ffffff;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+        }
+
+        .gantt-cell.date-header.today:hover {
+            background: #2563eb;
+        }
+
+        .gantt-cell.date-header.weekend {
+            background: #1e1e2e;
+            color: #64748b;
+        }
+
+        .gantt-cell.date-header.holiday {
+            background: #7c2d12;
+            color: #fed7aa;
+        }
+
+        .gantt-cell.date-header.holiday:hover {
+            background: #9a3412;
+        }
+
+        .gantt-cell.name-header {
+            background: #273549;
+            min-width: 140px;
+        }
+
+        .gantt-cell.person-name {
+            background: #1e293b;
+            text-align: left;
+            font-weight: 500;
+            padding: 8px 12px;
+            min-width: 140px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 4px;
+            border-right: 1px solid #334155;
+        }
+
+        .person-name-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .person-summary {
+            font-size: 0.65rem;
+            font-weight: 400;
+            display: flex;
+            gap: 8px;
+        }
+
+        .summary-dev {
+            color: #f472b6;
+        }
+
+        .summary-qa {
+            color: #fbbf24;
+        }
+
+        .summary-done {
+            color: #4ade80;
+        }
+
+        .gantt-cell.person-name .remove-btn {
+            background: transparent;
+            color: #64748b;
+            padding: 2px 6px;
+        }
+
+        .gantt-cell.person-name .remove-btn:hover {
+            color: #ef4444;
+        }
+
+        .gantt-cell.day-cell {
+            background: #0f172a;
+            position: relative;
+            min-height: 40px;
+            border-right: 1px solid #1e293b;
+        }
+
+        .gantt-cell.day-cell.today {
+            background: #172554;
+        }
+
+        .gantt-cell.day-cell.today::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-left: 3px solid #3b82f6;
+            pointer-events: none;
+        }
+
+        .gantt-cell.day-cell.weekend {
+            background: #0a0f1a;
+        }
+
+        .gantt-cell.day-cell.weekend.today {
+            background: #1e1e3a;
+        }
+
+        .gantt-cell.day-cell.holiday {
+            background: #1c1412;
+        }
+
+        .gantt-cell.day-cell.drop-target {
+            background: #1e3a5f;
+        }
+
+        /* Task bars */
+        .task-bar {
+            position: absolute;
+            left: 2px;
+            height: 28px;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: visible;
+            text-overflow: ellipsis;
+            cursor: grab;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            transition: box-shadow 0.1s;
+        }
+
+        .task-bar:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            z-index: 20;
+        }
+
+        .task-bar:active:not(.resizing) {
+            cursor: grabbing;
+            opacity: 0.8;
+        }
+
+        /* Resize handle */
+        .resize-handle {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 10px;
+            cursor: ew-resize;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.15);
+            border-radius: 0 4px 4px 0;
+            opacity: 0;
+            transition: opacity 0.15s, background 0.15s;
+        }
+
+        .task-bar:hover .resize-handle {
+            opacity: 1;
+        }
+
+        .resize-handle:hover {
+            background: rgba(0,0,0,0.3);
+        }
+
+        .resize-handle::after {
+            content: '⋮';
+            font-size: 10px;
+            color: rgba(0,0,0,0.5);
+            font-weight: bold;
+        }
+
+        .task-bar.resizing {
+            cursor: ew-resize;
+            z-index: 100;
+        }
+
+        .task-bar.resizing .resize-handle {
+            opacity: 1;
+            background: rgba(0,0,0,0.4);
+        }
+
+        /* Status colors */
+        .task-status-dev { 
+            background: #fce7f3; 
+            color: #9f1239; 
+            border: 2px solid #e11d48;
+        }
+        .task-status-qa { 
+            background: #fef9c3; 
+            color: #854d0e; 
+            border: 2px solid #ca8a04;
+        }
+        .task-status-done { 
+            background: #d1fae5; 
+            color: #166534; 
+            border: 2px solid #16a34a;
+        }
+
+        /* Done bucket gets skinny bars */
+        .task-bar.done-bucket {
+            height: 20px;
+            font-size: 0.65rem;
+            padding: 2px 6px;
+        }
+
+        /* Selected task bars */
+        .task-bar.selected {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.7), 0 4px 12px rgba(0,0,0,0.4);
+            z-index: 25;
+        }
+
+        .task-label {
+            position: relative;
+            z-index: 1;
+            padding: 4px 8px;
+            flex-shrink: 0;
+        }
+
+        .task-bar.done-bucket .task-label {
+            padding: 2px 6px;
+        }
+
+        /* Footer */
+        .footer-panel {
+            margin-top: 20px;
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .footer-panel h2 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+        }
+
+        .json-textarea {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.7rem;
+            height: 120px;
+            width: 100%;
+            resize: vertical;
+            color: #e2e8f0;
+            white-space: pre;
+            overflow: auto;
+        }
+
+        .json-textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .copy-toast {
+            background: #10b981;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: opacity 0.3s;
+        }
+
+        .copy-toast.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .clear-confirm {
+            color: #fbbf24;
+            font-size: 0.75rem;
+        }
+
+        .empty-gantt {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.hidden {
+            display: none;
+        }
+
+        .modal {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 24px;
+            min-width: 320px;
+            max-width: 90vw;
+        }
+
+        .modal h3 {
+            margin-bottom: 16px;
+            font-size: 1.125rem;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .form-group input {
+            width: 100%;
+        }
+
+        .modal .button-row {
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+
+        /* Status picker */
+        .status-picker {
+            display: flex;
+            gap: 8px;
+        }
+
+        .status-option {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 12px;
+            background: #0f172a;
+            border: 2px solid #334155;
+            border-radius: 8px;
+            color: #94a3b8;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .status-option:hover {
+            border-color: #475569;
+            color: #e2e8f0;
+        }
+
+        .status-option.active {
+            border-color: #3b82f6;
+            background: #1e293b;
+            color: #e2e8f0;
+        }
+
+        .status-option.active[data-status="dev"] {
+            border-color: #e11d48;
+            background: rgba(225, 29, 72, 0.1);
+        }
+
+        .status-option.active[data-status="qa"] {
+            border-color: #ca8a04;
+            background: rgba(202, 138, 4, 0.1);
+        }
+
+        .status-option.active[data-status="done"] {
+            border-color: #16a34a;
+            background: rgba(22, 163, 74, 0.1);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .status-dot.dev {
+            background: #e11d48;
+        }
+
+        .status-dot.qa {
+            background: #ca8a04;
+        }
+
+        .status-dot.done {
+            background: #16a34a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🗓️ Sprint Capacity Planner</h1>
+            <div class="header-controls">
+                <input type="date" id="sprintStart" title="Sprint Start">
+                <input type="number" id="sprintDays" min="5" max="20" value="10" style="width: 60px;" title="Working days">
+                <span style="font-size: 0.875rem; color: #94a3b8;">days</span>
+                <input type="text" id="newPersonName" placeholder="Name" style="width: 100px;" onkeypress="if(event.key==='Enter')addPerson()">
+                <button onclick="addPerson()">+ Person</button>
+            </div>
+        </header>
+
+        <div class="main-layout">
+            <div class="unassigned-panel">
+                <h2>Backlog</h2>
+                <div class="unassigned-list" id="unassignedList"></div>
+                <div class="add-task-form">
+                    <input type="text" id="newTaskName" placeholder="OAK-123" onkeypress="if(event.key==='Enter')addUnassignedTask()">
+                    <button onclick="addUnassignedTask()">+</button>
+                </div>
+            </div>
+
+            <div class="gantt-container">
+                <div class="gantt" id="gantt"></div>
+            </div>
+        </div>
+
+        <div class="footer-panel">
+            <h2>State (JSON)</h2>
+            <textarea class="json-textarea" id="jsonOutput" spellcheck="false"></textarea>
+            <div class="button-row">
+                <button class="secondary" onclick="copyJson()">📋 Copy</button>
+                <button class="danger" id="clearBtn" onclick="handleClear()">Clear All</button>
+            </div>
+            <div class="copy-toast hidden" id="copyToast">Copied!</div>
+        </div>
+    </div>
+
+    <!-- Task Edit Modal -->
+    <div class="modal-overlay hidden" id="taskModal">
+        <div class="modal">
+            <h3>Schedule Task</h3>
+            <div class="form-group">
+                <label>Task</label>
+                <input type="text" id="editTaskName" readonly style="background: #334155;">
+            </div>
+            <div class="form-group">
+                <label>Start Date</label>
+                <input type="date" id="editTaskStart">
+            </div>
+            <div class="form-group">
+                <label>Duration (days)</label>
+                <input type="number" id="editTaskDuration" min="1" max="20" value="1">
+            </div>
+            <div class="form-group">
+                <label>Status</label>
+                <div class="status-picker" id="statusPicker">
+                    <button type="button" class="status-option" data-status="dev">
+                        <span class="status-dot dev"></span> Dev
+                    </button>
+                    <button type="button" class="status-option" data-status="qa">
+                        <span class="status-dot qa"></span> QA
+                    </button>
+                    <button type="button" class="status-option" data-status="done">
+                        <span class="status-dot done"></span> Done
+                    </button>
+                </div>
+                <input type="hidden" id="editTaskStatus" value="dev">
+            </div>
+            <div class="button-row">
+                <button class="danger" onclick="unassignTask()">Unassign</button>
+                <button class="secondary" onclick="closeModal()">Cancel</button>
+                <button onclick="saveTaskEdit()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State - the clean structure
+        let state = {
+            sprintStart: null,
+            sprintDays: 10,
+            holidays: [], // Array of date strings like "2025-12-25"
+            unassigned: [],
+            // Other keys are person names with their task arrays
+        };
+
+        let editingContext = null; // { person, taskIndex }
+
+        // Get people (all keys except reserved ones and 'done' which is handled separately)
+        function getPeople() {
+            return Object.keys(state).filter(k => !['sprintStart', 'sprintDays', 'holidays', 'unassigned', 'done'].includes(k));
+        }
+
+        // Initialize
+        function init() {
+            const saved = localStorage.getItem('sprintPlannerV2');
+            if (saved) {
+                state = JSON.parse(saved);
+            }
+            
+            // Ensure done bucket always exists
+            if (!state.done) {
+                state.done = [];
+            }
+            
+            if (!state.sprintStart) {
+                const today = new Date();
+                const daysUntilMonday = (8 - today.getDay()) % 7 || 7;
+                const nextMonday = new Date(today);
+                nextMonday.setDate(today.getDate() + daysUntilMonday);
+                state.sprintStart = nextMonday.toISOString().split('T')[0];
+            }
+
+            document.getElementById('sprintStart').value = state.sprintStart;
+            document.getElementById('sprintDays').value = state.sprintDays || 10;
+            
+            render();
+        }
+
+        function saveState() {
+            localStorage.setItem('sprintPlannerV2', JSON.stringify(state));
+            document.getElementById('jsonOutput').value = JSON.stringify(state, null, 2);
+        }
+
+        // Get all calendar days for the sprint (including weekends for display)
+        function getSprintCalendarDays() {
+            if (!state.sprintStart) return [];
+            const days = [];
+            const start = new Date(state.sprintStart + 'T12:00:00');
+            let current = new Date(start);
+            let workingDays = 0;
+
+            while (workingDays < state.sprintDays) {
+                const dayOfWeek = current.getDay();
+                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                
+                days.push({
+                    date: new Date(current),
+                    isWeekend
+                });
+
+                if (!isWeekend) workingDays++;
+                current.setDate(current.getDate() + 1);
+            }
+            return days;
+        }
+
+        function formatDateShort(date) {
+            return date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
+        }
+
+        function formatDateKey(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function parseDate(str) {
+            return new Date(str + 'T12:00:00');
+        }
+
+        // Hash string to number for consistent colors
+        function hashString(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash << 5) - hash) + str.charCodeAt(i);
+                hash |= 0;
+            }
+            return Math.abs(hash);
+        }
+
+        // Render everything
+        function render() {
+            renderUnassigned();
+            renderGantt();
+            saveState();
+        }
+
+        function renderUnassigned() {
+            const list = document.getElementById('unassignedList');
+            
+            if (!state.unassigned || state.unassigned.length === 0) {
+                list.innerHTML = '<div style="color: #64748b; font-size: 0.875rem; text-align: center; padding: 20px;">No tasks in backlog</div>';
+                return;
+            }
+
+            list.innerHTML = state.unassigned.map((task, i) => {
+                const selected = isSelected('unassigned', i);
+                return `
+                <div class="unassigned-task ${selected ? 'selected' : ''}" 
+                     draggable="true" 
+                     ondragstart="dragStart(event, 'unassigned', ${i})"
+                     onclick="toggleSelect(event, 'unassigned', ${i})">
+                    <span class="task-name">${task.name}</span>
+                    <button class="delete-btn small" onclick="event.stopPropagation(); deleteUnassigned(${i})">✕</button>
+                </div>
+            `}).join('');
+        }
+
+        function renderGantt() {
+            const gantt = document.getElementById('gantt');
+            const days = getSprintCalendarDays();
+            const people = getPeople();
+            const today = formatDateKey(new Date());
+
+            if (days.length === 0) {
+                gantt.innerHTML = '<div class="empty-gantt">Set a sprint start date</div>';
+                return;
+            }
+
+            if (people.length === 0) {
+                gantt.innerHTML = '<div class="empty-gantt">Add team members to begin</div>';
+                return;
+            }
+
+            // Grid columns: name column + each day
+            gantt.style.gridTemplateColumns = `140px repeat(${days.length}, minmax(90px, 1fr))`;
+
+            const LANE_HEIGHT = 32; // height per lane in pixels
+            const LANE_HEIGHT_DONE = 24; // skinnier for done bucket
+            const LANE_PADDING = 6; // top padding for first lane
+
+            let html = '';
+
+            // Header row
+            html += `<div class="gantt-row">`;
+            html += `<div class="gantt-cell name-header"></div>`;
+            for (const day of days) {
+                const dateKey = formatDateKey(day.date);
+                const isToday = dateKey === today;
+                const isHoliday = state.holidays && state.holidays.includes(dateKey);
+                let classes = 'gantt-cell date-header';
+                if (isToday) classes += ' today';
+                if (day.isWeekend) classes += ' weekend';
+                if (isHoliday) classes += ' holiday';
+                html += `<div class="${classes}" onclick="toggleHoliday('${dateKey}')" title="Click to toggle holiday">${formatDateShort(day.date)}</div>`;
+            }
+            html += `</div>`;
+
+            // Helper to render a person row
+            function renderPersonRow(person) {
+                const tasks = state[person] || [];
+                const isDoneBucket = person === 'done';
+                const laneHeight = isDoneBucket ? LANE_HEIGHT_DONE : LANE_HEIGHT;
+                
+                // Calculate lanes for this person's tasks
+                const taskLanes = assignLanes(tasks);
+                const numLanes = Math.max(1, ...taskLanes.map(t => t.lane + 1));
+                const rowHeight = numLanes * laneHeight + LANE_PADDING * 2;
+
+                // Calculate summary stats
+                const devCount = tasks.filter(t => (t.status || 'dev') === 'dev').length;
+                const qaCount = tasks.filter(t => t.status === 'qa').length;
+                const doneCount = tasks.filter(t => t.status === 'done').length;
+                
+                let summaryHtml = '';
+                if (!isDoneBucket && tasks.length > 0) {
+                    const parts = [];
+                    if (devCount > 0) parts.push(`<span class="summary-dev">${devCount} dev</span>`);
+                    if (qaCount > 0) parts.push(`<span class="summary-qa">${qaCount} qa</span>`);
+                    if (doneCount > 0) parts.push(`<span class="summary-done">${doneCount} done</span>`);
+                    summaryHtml = `<div class="person-summary">${parts.join(' ')}</div>`;
+                } else if (isDoneBucket) {
+                    summaryHtml = `<div class="person-summary"><span class="summary-done">${tasks.length} completed</span></div>`;
+                }
+
+                let rowHtml = `<div class="gantt-row">`;
+                rowHtml += `<div class="gantt-cell person-name" style="height: ${rowHeight}px;">
+                    <div class="person-name-inner">
+                        <span>${person}</span>
+                        ${isDoneBucket ? '' : `<button class="remove-btn small" onclick="removePerson('${person}')">✕</button>`}
+                    </div>
+                    ${summaryHtml}
+                </div>`;
+
+                for (const day of days) {
+                    const dateKey = formatDateKey(day.date);
+                    const isToday = dateKey === today;
+                    const isHoliday = state.holidays && state.holidays.includes(dateKey);
+                    let classes = 'gantt-cell day-cell';
+                    if (isToday) classes += ' today';
+                    if (day.isWeekend) classes += ' weekend';
+                    if (isHoliday) classes += ' holiday';
+
+                    rowHtml += `<div class="${classes}" 
+                                style="height: ${rowHeight}px;"
+                                data-person="${person}" 
+                                data-date="${dateKey}"
+                                ondragover="dragOver(event)"
+                                ondragleave="dragLeave(event)"
+                                ondrop="drop(event, '${person}', '${dateKey}')">`;
+
+                    // Render task bars that START on this day
+                    taskLanes.forEach((taskWithLane) => {
+                        const { task, taskIndex, lane, calendarDays } = taskWithLane;
+                        if (task.start === dateKey) {
+                            const duration = task.duration || 1;
+                            const status = task.status || 'dev';
+                            const statusClass = `task-status-${status}`;
+                            const doneBucketClass = isDoneBucket ? 'done-bucket' : '';
+                            const selectedClass = isSelected('task', taskIndex, person) ? 'selected' : '';
+                            const widthCalc = `calc(${calendarDays * 100}% - 4px)`;
+                            const topPos = LANE_PADDING + lane * laneHeight;
+                            
+                            rowHtml += `<div class="task-bar ${statusClass} ${doneBucketClass} ${selectedClass}" 
+                                        data-person="${person}"
+                                        data-task-index="${taskIndex}"
+                                        style="width: ${widthCalc}; top: ${topPos}px;"
+                                        draggable="true"
+                                        ondragstart="dragStartTask(event, '${person}', ${taskIndex})"
+                                        onclick="handleTaskClick(event, '${person}', ${taskIndex})"
+                                        title="${task.name} (${status.toUpperCase()}, ${duration} working day${duration > 1 ? 's' : ''})">
+                                        <span class="task-label">${task.name}</span>
+                                        <div class="resize-handle" onmousedown="startResize(event, '${person}', ${taskIndex})"></div>
+                                    </div>`;
+                        }
+                    });
+
+                    rowHtml += `</div>`;
+                }
+
+                rowHtml += `</div>`;
+                return rowHtml;
+            }
+
+            // Render regular people rows
+            for (const person of people) {
+                html += renderPersonRow(person);
+            }
+
+            // Always render done bucket last
+            html += renderPersonRow('done');
+
+            gantt.innerHTML = html;
+        }
+
+        // Assign lanes to tasks to avoid overlaps
+        function assignLanes(tasks) {
+            if (!tasks || tasks.length === 0) return [];
+
+            // Add index and parse dates
+            const taskData = tasks.map((task, taskIndex) => {
+                const startDate = parseDate(task.start);
+                const duration = task.duration || 1;
+                const { endDate, calendarDays, segments } = getTaskSpan(startDate, duration);
+                
+                return {
+                    task,
+                    taskIndex,
+                    startDate,
+                    endDate,
+                    calendarDays,
+                    segments,
+                    lane: 0
+                };
+            });
+
+            // Sort by start date
+            taskData.sort((a, b) => a.startDate - b.startDate);
+
+            // Greedy lane assignment
+            const lanes = []; // Each lane tracks its end date
+
+            for (const t of taskData) {
+                // Find first lane where this task fits (starts after lane's current end)
+                let assigned = false;
+                for (let i = 0; i < lanes.length; i++) {
+                    if (t.startDate > lanes[i]) {
+                        t.lane = i;
+                        lanes[i] = t.endDate;
+                        assigned = true;
+                        break;
+                    }
+                }
+                if (!assigned) {
+                    // Need a new lane
+                    t.lane = lanes.length;
+                    lanes.push(t.endDate);
+                }
+            }
+
+            return taskData;
+        }
+
+        // Calculate task span including weekends and holidays
+        // Returns: { endDate, calendarDays, segments: [{type: 'work'|'weekend', days: n}, ...] }
+        function getTaskSpan(startDate, workingDays) {
+            const segments = [];
+            let current = new Date(startDate);
+            let workDaysRemaining = workingDays;
+            let totalCalendarDays = 0;
+            let currentSegment = null;
+            const holidays = state.holidays || [];
+
+            while (workDaysRemaining > 0) {
+                const dayOfWeek = current.getDay();
+                const dateKey = formatDateKey(current);
+                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                const isHoliday = holidays.includes(dateKey);
+                const isNonWorkDay = isWeekend || isHoliday;
+                const segmentType = isNonWorkDay ? 'weekend' : 'work';
+
+                if (!currentSegment || currentSegment.type !== segmentType) {
+                    if (currentSegment) segments.push(currentSegment);
+                    currentSegment = { type: segmentType, days: 0 };
+                }
+
+                currentSegment.days++;
+                totalCalendarDays++;
+
+                if (!isNonWorkDay) {
+                    workDaysRemaining--;
+                }
+
+                if (workDaysRemaining > 0) {
+                    current.setDate(current.getDate() + 1);
+                }
+            }
+
+            if (currentSegment && currentSegment.days > 0) {
+                segments.push(currentSegment);
+            }
+
+            return {
+                endDate: new Date(current),
+                calendarDays: totalCalendarDays,
+                segments
+            };
+        }
+
+        // Actions
+        function addUnassignedTask() {
+            const input = document.getElementById('newTaskName');
+            const name = input.value.trim();
+            if (!name) return;
+
+            if (!state.unassigned) state.unassigned = [];
+            state.unassigned.push({ name });
+            input.value = '';
+            render();
+        }
+
+        function deleteUnassigned(index) {
+            state.unassigned.splice(index, 1);
+            render();
+        }
+
+        function addPerson() {
+            const input = document.getElementById('newPersonName');
+            const name = input.value.trim();
+            if (!name) return;
+            
+            const cleanName = name.toLowerCase().replace(/\s+/g, '_');
+            if (!state[cleanName]) {
+                state[cleanName] = [];
+                input.value = '';
+                render();
+            }
+        }
+
+        function removePerson(name) {
+            // Move tasks back to unassigned
+            const tasks = state[name] || [];
+            for (const task of tasks) {
+                state.unassigned.push({ name: task.name });
+            }
+            delete state[name];
+            render();
+        }
+
+        // Drag and drop
+        let dragData = null;
+        
+        // Multi-select state: { type: 'unassigned'|'task', indices: [...] } or { type: 'task', items: [{person, index}, ...] }
+        let selectedItems = { type: null, indices: [], items: [] };
+
+        function toggleSelect(event, type, index, person = null) {
+            event.stopPropagation();
+            
+            // If clicking a different type, clear selection
+            if (selectedItems.type && selectedItems.type !== type) {
+                clearSelection();
+            }
+            
+            selectedItems.type = type;
+            
+            if (type === 'unassigned') {
+                if (event.ctrlKey || event.metaKey) {
+                    // Toggle this item
+                    const idx = selectedItems.indices.indexOf(index);
+                    if (idx > -1) {
+                        selectedItems.indices.splice(idx, 1);
+                    } else {
+                        selectedItems.indices.push(index);
+                    }
+                } else if (event.shiftKey && selectedItems.indices.length > 0) {
+                    // Range select
+                    const lastSelected = selectedItems.indices[selectedItems.indices.length - 1];
+                    const start = Math.min(lastSelected, index);
+                    const end = Math.max(lastSelected, index);
+                    for (let i = start; i <= end; i++) {
+                        if (!selectedItems.indices.includes(i)) {
+                            selectedItems.indices.push(i);
+                        }
+                    }
+                } else {
+                    // Single select
+                    selectedItems.indices = [index];
+                }
+            } else if (type === 'task') {
+                const itemKey = `${person}:${index}`;
+                if (event.ctrlKey || event.metaKey) {
+                    const idx = selectedItems.items.findIndex(it => `${it.person}:${it.index}` === itemKey);
+                    if (idx > -1) {
+                        selectedItems.items.splice(idx, 1);
+                    } else {
+                        selectedItems.items.push({ person, index });
+                    }
+                } else {
+                    selectedItems.items = [{ person, index }];
+                }
+            }
+            
+            render();
+        }
+
+        function isSelected(type, index, person = null) {
+            if (selectedItems.type !== type) return false;
+            if (type === 'unassigned') {
+                return selectedItems.indices.includes(index);
+            } else {
+                return selectedItems.items.some(it => it.person === person && it.index === index);
+            }
+        }
+
+        function clearSelection() {
+            selectedItems = { type: null, indices: [], items: [] };
+        }
+
+        // Resize functionality
+        let resizeData = null;
+
+        function startResize(event, person, taskIndex) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const taskBar = event.target.closest('.task-bar');
+            const ganttContainer = document.querySelector('.gantt-container');
+            const dayCell = document.querySelector('.gantt-cell.day-cell');
+            const cellWidth = dayCell ? dayCell.offsetWidth : 80;
+            
+            const task = state[person][taskIndex];
+            
+            resizeData = {
+                person,
+                taskIndex,
+                task,
+                taskBar,
+                startX: event.clientX,
+                originalDuration: task.duration || 1,
+                cellWidth,
+                ganttContainer
+            };
+            
+            taskBar.classList.add('resizing');
+            taskBar.setAttribute('draggable', 'false');
+            
+            document.addEventListener('mousemove', handleResize);
+            document.addEventListener('mouseup', endResize);
+        }
+
+        function handleResize(event) {
+            if (!resizeData) return;
+            
+            const deltaX = event.clientX - resizeData.startX;
+            const deltaDays = Math.round(deltaX / resizeData.cellWidth);
+            const newDuration = Math.max(1, resizeData.originalDuration + deltaDays);
+            
+            // Calculate new calendar days for preview
+            const startDate = parseDate(resizeData.task.start);
+            const { calendarDays } = getTaskSpan(startDate, newDuration);
+            
+            // Update visual width
+            resizeData.taskBar.style.width = `calc(${calendarDays * 100}% - 4px)`;
+            resizeData.taskBar.title = `${resizeData.task.name} (${newDuration} working day${newDuration > 1 ? 's' : ''})`;
+            
+            resizeData.newDuration = newDuration;
+        }
+
+        function endResize(event) {
+            if (!resizeData) return;
+            
+            document.removeEventListener('mousemove', handleResize);
+            document.removeEventListener('mouseup', endResize);
+            
+            resizeData.taskBar.classList.remove('resizing');
+            resizeData.taskBar.setAttribute('draggable', 'true');
+            
+            // Apply the new duration if changed
+            if (resizeData.newDuration && resizeData.newDuration !== resizeData.originalDuration) {
+                state[resizeData.person][resizeData.taskIndex].duration = resizeData.newDuration;
+                render();
+            }
+            
+            resizeData = null;
+        }
+
+        function dragStart(event, source, index) {
+            // If dragging a selected item, drag all selected
+            if (selectedItems.type === 'unassigned' && selectedItems.indices.includes(index)) {
+                dragData = { type: 'unassigned-multi', indices: [...selectedItems.indices].sort((a,b) => a-b) };
+            } else {
+                // Single drag
+                dragData = { source, index, type: 'unassigned' };
+                clearSelection();
+            }
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', '');
+        }
+
+        function dragStartTask(event, person, taskIndex) {
+            // Don't start drag if we're resizing
+            if (resizeData) {
+                event.preventDefault();
+                return;
+            }
+            
+            // If dragging a selected task, drag all selected
+            if (selectedItems.type === 'task' && selectedItems.items.some(it => it.person === person && it.index === taskIndex)) {
+                dragData = { type: 'task-multi', items: [...selectedItems.items] };
+            } else {
+                dragData = { source: person, index: taskIndex, type: 'task' };
+                clearSelection();
+            }
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', '');
+            event.stopPropagation();
+        }
+
+        function dragOver(event) {
+            event.preventDefault();
+            event.currentTarget.classList.add('drop-target');
+        }
+
+        function dragLeave(event) {
+            event.currentTarget.classList.remove('drop-target');
+        }
+
+        // Toggle a date as holiday
+        function toggleHoliday(dateKey) {
+            if (!state.holidays) state.holidays = [];
+            const idx = state.holidays.indexOf(dateKey);
+            if (idx > -1) {
+                state.holidays.splice(idx, 1);
+            } else {
+                state.holidays.push(dateKey);
+            }
+            render();
+        }
+
+        // If date falls on weekend or holiday, return next working day
+        function skipNonWorkDay(dateKey) {
+            const holidays = state.holidays || [];
+            let date = new Date(dateKey + 'T12:00:00');
+            let attempts = 0;
+            
+            while (attempts < 30) { // Safety limit
+                const day = date.getDay();
+                const currentKey = formatDateKey(date);
+                const isWeekend = day === 0 || day === 6;
+                const isHoliday = holidays.includes(currentKey);
+                
+                if (!isWeekend && !isHoliday) {
+                    return currentKey;
+                }
+                
+                date.setDate(date.getDate() + 1);
+                attempts++;
+            }
+            
+            return dateKey; // Fallback
+        }
+
+        function drop(event, person, dateKey) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('drop-target');
+
+            if (!dragData) return;
+            
+            // Skip weekends and holidays - land on next working day
+            const actualDateKey = skipNonWorkDay(dateKey);
+
+            if (dragData.type === 'unassigned-multi') {
+                // Multi-drop from backlog - remove in reverse order to preserve indices
+                const tasks = [];
+                for (const idx of [...dragData.indices].sort((a,b) => b-a)) {
+                    tasks.unshift(state.unassigned.splice(idx, 1)[0]);
+                }
+                
+                if (!state[person]) state[person] = [];
+                
+                tasks.forEach((task) => {
+                    let newStatus = task.status || 'dev';
+                    if (person === 'done') newStatus = 'done';
+                    
+                    state[person].push({
+                        name: task.name,
+                        start: actualDateKey,
+                        duration: task.duration || 1,
+                        status: newStatus
+                    });
+                });
+                
+            } else if (dragData.type === 'task-multi') {
+                // Multi-drop tasks - sort by person then index descending to safely remove
+                const sortedItems = [...dragData.items].sort((a, b) => {
+                    if (a.person !== b.person) return a.person.localeCompare(b.person);
+                    return b.index - a.index;
+                });
+                
+                const tasks = [];
+                const processed = new Set();
+                
+                for (const item of sortedItems) {
+                    const key = `${item.person}:${item.index}`;
+                    if (processed.has(key)) continue;
+                    processed.add(key);
+                    
+                    const task = state[item.person].splice(item.index, 1)[0];
+                    tasks.unshift({ task, previousPerson: item.person });
+                }
+                
+                if (!state[person]) state[person] = [];
+                
+                tasks.forEach(({ task, previousPerson }) => {
+                    let newStatus = task.status || 'dev';
+                    if (person === 'done') {
+                        newStatus = 'done';
+                    } else if (previousPerson === 'done' && person !== 'done') {
+                        newStatus = 'dev';
+                    }
+                    
+                    state[person].push({
+                        name: task.name,
+                        start: actualDateKey,
+                        duration: task.duration || 1,
+                        status: newStatus
+                    });
+                });
+                
+            } else if (dragData.type === 'unassigned') {
+                // Single unassigned drag
+                const task = state.unassigned.splice(dragData.index, 1)[0];
+                task.duration = task.duration || 1;
+                task.status = task.status || 'dev';
+                
+                let newStatus = task.status;
+                if (person === 'done') newStatus = 'done';
+                
+                if (!state[person]) state[person] = [];
+                state[person].push({
+                    name: task.name,
+                    start: actualDateKey,
+                    duration: task.duration || 1,
+                    status: newStatus
+                });
+                
+            } else {
+                // Single task drag
+                const previousPerson = dragData.source;
+                const task = state[dragData.source].splice(dragData.index, 1)[0];
+                
+                let newStatus = task.status || 'dev';
+                if (person === 'done') {
+                    newStatus = 'done';
+                } else if (previousPerson === 'done' && person !== 'done') {
+                    newStatus = 'dev';
+                }
+
+                if (!state[person]) state[person] = [];
+                state[person].push({
+                    name: task.name,
+                    start: actualDateKey,
+                    duration: task.duration || 1,
+                    status: newStatus
+                });
+            }
+
+            dragData = null;
+            clearSelection();
+            render();
+        }
+
+        // Handle task bar click - edit on normal click, select on ctrl/shift click
+        function handleTaskClick(event, person, taskIndex) {
+            event.stopPropagation();
+            
+            if (event.ctrlKey || event.metaKey || event.shiftKey) {
+                toggleSelect(event, 'task', taskIndex, person);
+            } else {
+                clearSelection();
+                editTask(person, taskIndex);
+            }
+        }
+
+        // Edit task
+        function editTask(person, taskIndex) {
+            const task = state[person][taskIndex];
+            editingContext = { person, taskIndex };
+
+            document.getElementById('editTaskName').value = task.name;
+            document.getElementById('editTaskStart').value = task.start;
+            document.getElementById('editTaskDuration').value = task.duration || 1;
+            setStatusPicker(task.status || 'dev');
+            document.getElementById('taskModal').classList.remove('hidden');
+        }
+
+        function setStatusPicker(status) {
+            document.getElementById('editTaskStatus').value = status;
+            document.querySelectorAll('.status-option').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.status === status);
+            });
+        }
+
+        function closeModal() {
+            document.getElementById('taskModal').classList.add('hidden');
+            editingContext = null;
+        }
+
+        function saveTaskEdit() {
+            if (!editingContext) return;
+
+            const { person, taskIndex } = editingContext;
+            state[person][taskIndex].start = document.getElementById('editTaskStart').value;
+            state[person][taskIndex].duration = parseInt(document.getElementById('editTaskDuration').value) || 1;
+            state[person][taskIndex].status = document.getElementById('editTaskStatus').value;
+
+            closeModal();
+            render();
+        }
+
+        function unassignTask() {
+            if (!editingContext) return;
+
+            const { person, taskIndex } = editingContext;
+            const task = state[person].splice(taskIndex, 1)[0];
+            state.unassigned.push({ name: task.name });
+
+            closeModal();
+            render();
+        }
+
+        // JSON controls
+        function copyJson() {
+            const textarea = document.getElementById('jsonOutput');
+            navigator.clipboard.writeText(textarea.value).then(() => {
+                const toast = document.getElementById('copyToast');
+                toast.classList.remove('hidden');
+                setTimeout(() => toast.classList.add('hidden'), 1500);
+            });
+        }
+
+        function loadJson() {
+            const textarea = document.getElementById('jsonOutput');
+            const json = textarea.value.trim();
+            if (!json) return;
+            
+            try {
+                const newState = JSON.parse(json);
+                state = newState;
+                document.getElementById('sprintStart').value = state.sprintStart || '';
+                document.getElementById('sprintDays').value = state.sprintDays || 10;
+                render();
+            } catch (e) {
+                // Flash the textarea red briefly to indicate error
+                textarea.style.borderColor = '#ef4444';
+                setTimeout(() => textarea.style.borderColor = '', 1000);
+            }
+        }
+
+        let clearPending = false;
+        function handleClear() {
+            const btn = document.getElementById('clearBtn');
+            if (!clearPending) {
+                clearPending = true;
+                btn.textContent = 'Click again to confirm';
+                btn.style.background = '#b91c1c';
+                setTimeout(() => {
+                    clearPending = false;
+                    btn.textContent = 'Clear All';
+                    btn.style.background = '';
+                }, 3000);
+            } else {
+                clearPending = false;
+                btn.textContent = 'Clear All';
+                btn.style.background = '';
+                state = {
+                    sprintStart: state.sprintStart,
+                    sprintDays: state.sprintDays,
+                    unassigned: []
+                };
+                render();
+            }
+        }
+
+        // Event listeners
+        document.getElementById('sprintStart').addEventListener('change', (e) => {
+            state.sprintStart = e.target.value;
+            render();
+        });
+
+        document.getElementById('sprintDays').addEventListener('change', (e) => {
+            state.sprintDays = parseInt(e.target.value) || 10;
+            render();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (selectedItems.type) {
+                    clearSelection();
+                    render();
+                } else {
+                    closeModal();
+                }
+            }
+        });
+
+        // Click on gantt container clears selection (if not clicking a task)
+        document.querySelector('.gantt-container').addEventListener('click', (e) => {
+            if (e.target.classList.contains('gantt-container') || 
+                e.target.classList.contains('gantt') ||
+                e.target.classList.contains('day-cell')) {
+                if (selectedItems.type && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+                    clearSelection();
+                    render();
+                }
+            }
+        });
+
+        // Status picker clicks
+        document.querySelectorAll('.status-option').forEach(btn => {
+            btn.addEventListener('click', () => {
+                setStatusPicker(btn.dataset.status);
+            });
+        });
+
+        init();
+    </script>
+</body>
+</html>
